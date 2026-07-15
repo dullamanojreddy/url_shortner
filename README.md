@@ -1,165 +1,578 @@
-# Distributed URL Shortener
+# 🚀 Distributed URL Shortener - Microservices Architecture
 
-A production-grade, scalable distributed URL shortening service capable of handling millions of redirects with low latency (<50ms). Demonstrates system design, microservices, caching, message queues, and DevOps best practices — a strong portfolio and interview project.
+A production-style **distributed URL shortening platform** built using **microservices architecture** with authentication, caching, event-driven analytics, monitoring, and containerized deployment.
 
----
+This project demonstrates real-world distributed system concepts such as:
 
-## Features
+- Microservices communication
+- API Gateway pattern
+- Redis caching
+- Kafka event streaming
+- Database design
+- Observability
+- Docker-based deployment
 
-- **URL Shortening** — Generate unique short codes via Base62 encoding of Snowflake IDs
-- **Custom Aliases** — e.g. `tiny.ly/chatgpt`
-- **URL Expiration** — 7 days, 30 days, or never
-- **Password-Protected Links** — Bcrypt-hashed per-link passwords
-- **QR Code Generation** — On-demand QR codes stored in object storage
-- **Analytics Dashboard** — Click counts, country, browser, device breakdown
-- **Async Analytics** — Kafka-powered event streaming; never slows redirects
-- **REST API + API Keys** — Programmatic access with per-key rate limiting
-- **Admin Panel API** — User management, abuse detection, system health
-- **Rate Limiting** — Per-IP and per-user via Redis sliding window
-- **JWT Authentication** — Stateless, RS256-signed tokens
+Inspired by systems like Bitly.
 
 ---
 
-## Architecture
+# 🏗️ Architecture Overview
 
 ```
-Internet
-   │
-Nginx (API Gateway)
-   │
-   ├── /api/v1/auth    → auth-service      (port 3001)
-   ├── /api/v1/urls    → url-service       (port 3002)
-   ├── /api/v1/analytics → analytics-service (port 3003)
-   ├── /api/v1/qr      → qr-service        (port 3004)
-   ├── /api/v1/admin   → admin-service     (port 3005)
-   └── /:shortCode     → redirect-service  (port 3006)
-         │
-    Redis Cluster (cache + rate limiting)
-         │
-    PostgreSQL (persistent store)
-         │
-    Kafka → Analytics Workers → Click DB
+                         Client
+                           |
+                           |
+                     Nginx API Gateway
+                           |
+      ------------------------------------------------
+      |          |          |        |        |
+   Auth      URL        Redirect    QR     Admin
+ Service   Service      Service  Service Service
+      |          |          |
+      |          |          |
+      ----------- MySQL ----
+                 |
+              Redis Cache
+
+
+Redirect Service
+        |
+        |
+      Kafka
+        |
+        |
+Analytics Consumer
+        |
+        |
+      MySQL
+
+
+Monitoring Layer:
+
+Prometheus  --->  Grafana
 ```
 
 ---
 
-## Tech Stack
+# ✨ Features
 
-| Layer | Technology |
-|---|---|
-| Backend | Node.js 20, Express 5 |
-| Database | PostgreSQL 15 |
-| Cache | Redis 7 |
-| Message Queue | Apache Kafka 3 + Zookeeper |
-| API Gateway | Nginx |
-| QR Codes | qrcode library |
-| Auth | JWT (jsonwebtoken) + bcrypt |
-| Monitoring | Prometheus + Grafana |
-| Logging | Winston + Morgan |
-| Containerization | Docker + Docker Compose |
-| Orchestration | Kubernetes (manifests in `/k8s`) |
-| CI/CD | GitHub Actions |
+## 🔗 URL Shortening
+
+- Generate unique short URLs
+- Convert long URLs into compact links
+- Store URL information securely
+- Redirect users instantly
+- Support expiration handling
+
+Example:
+
+```
+Original URL:
+
+https://github.com
+
+
+Generated:
+
+http://localhost/Q3pdJRi2
+```
 
 ---
 
-## Getting Started
+# 🔐 Authentication System
 
-### Prerequisites
+Implemented using JWT authentication.
 
-- Docker 24+
-- Docker Compose 2+
-- Node.js 20+ (for local development)
+Features:
 
-### 1. Clone and configure
+- User registration
+- User login
+- Secure authentication
+- Protected APIs
+- Role-based authorization
+
+Roles:
+
+```
+User
+Admin
+```
+
+---
+
+# ⚡ High Performance Redirect System
+
+Redirect flow:
+
+```
+User clicks short URL
+
+        |
+        ↓
+
+Redirect Service
+
+        |
+        ↓
+
+Check Redis Cache
+
+        |
+        |
+    Cache Hit
+        |
+        ↓
+
+Instant Redirect
+
+
+    Cache Miss
+
+        |
+        ↓
+
+    MySQL Lookup
+
+        |
+        ↓
+
+    Update Redis
+
+        |
+        ↓
+
+    Redirect User
+```
+
+Benefits:
+
+- Faster response time
+- Reduced database queries
+- Better scalability
+
+---
+
+# 📊 Event Driven Analytics
+
+Analytics processing is implemented using Apache Kafka.
+
+Flow:
+
+```
+User Click
+
+    |
+    ↓
+
+Redirect Service
+
+    |
+    ↓
+
+Kafka Topic
+(url.clicks)
+
+    |
+    ↓
+
+Analytics Consumer
+
+    |
+    ↓
+
+MySQL Analytics Database
+```
+
+Collected information:
+
+- Browser
+- Operating System
+- Device type
+- IP Address
+- Referrer
+- Click timestamp
+
+
+Example:
+
+```
+Chrome | Windows | Desktop | 2026-07-15
+```
+
+---
+
+# 🧩 Microservices
+
+| Service | Port | Responsibility |
+|---------|------|----------------|
+| Nginx Gateway | 80 | API Gateway |
+| Auth Service | 3001 | Authentication |
+| URL Service | 3002 | URL creation |
+| Analytics Service | 3003 | Click tracking |
+| QR Service | 3004 | QR generation |
+| Admin Service | 3005 | Administration |
+| Redirect Service | 3006 | URL redirection |
+
+---
+
+# 🛠️ Technology Stack
+
+## Backend
+
+- Node.js
+- TypeScript
+- Express.js
+
+## Database
+
+- MySQL 8
+
+## Cache
+
+- Redis
+
+## Messaging
+
+- Apache Kafka
+- Zookeeper
+
+## Gateway
+
+- Nginx
+
+## Monitoring
+
+- Prometheus
+- Grafana
+
+## Deployment
+
+- Docker
+- Docker Compose
+
+---
+
+# 🐳 Docker Deployment
+
+The complete application runs using Docker Compose.
+
+Included containers:
+
+```
+✓ Nginx
+✓ Auth Service
+✓ URL Service
+✓ Redirect Service
+✓ Analytics Service
+✓ QR Service
+✓ Admin Service
+✓ MySQL
+✓ Redis
+✓ Kafka
+✓ Zookeeper
+✓ Prometheus
+✓ Grafana
+```
+
+---
+
+# 🚀 Running the Project
+
+Clone repository:
 
 ```bash
-git clone https://github.com/yourname/distributed-url-shortener.git
-cd distributed-url-shortener
-cp .env.example .env
-# Edit .env and set strong secrets
+git clone https://github.com/dullamanojreddy/url_shortner.git
 ```
 
-### 2. Start everything
+Move into project:
 
 ```bash
-docker-compose up --build
+cd url_shortner
 ```
 
-Services will be available at:
-
-| Service | URL |
-|---|---|
-| API Gateway | http://localhost:80 |
-| Prometheus | http://localhost:9090 |
-| Grafana | http://localhost:3000 (admin/admin) |
-
-### 3. Create your first short URL
+Build and start:
 
 ```bash
-# Register
-curl -X POST http://localhost/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Alice","email":"alice@example.com","password":"secret123"}'
+docker compose up --build
+```
 
-# Login
-curl -X POST http://localhost/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"alice@example.com","password":"secret123"}'
-# → Copy the token
+Run in background:
 
-# Shorten a URL
-curl -X POST http://localhost/api/v1/urls \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{"originalUrl":"https://google.com","customAlias":"google","expiry":"30d"}'
-# → {"shortUrl":"http://localhost/google"}
+```bash
+docker compose up -d
+```
 
-# Redirect
-curl -L http://localhost/google
+Check running services:
+
+```bash
+docker compose ps
 ```
 
 ---
 
-## API Reference
+# 🔄 Request Flow
 
-See [`docs/api.md`](docs/api.md) for full documentation.
+## Creating Short URL
 
-| Method | Path | Description |
-|---|---|---|
-| POST | `/api/v1/auth/register` | Register user |
-| POST | `/api/v1/auth/login` | Login, get JWT |
-| POST | `/api/v1/urls` | Create short URL |
-| GET | `/:shortCode` | Redirect |
-| GET | `/api/v1/urls/:shortCode` | Get URL metadata |
-| PUT | `/api/v1/urls/:shortCode` | Update destination |
-| DELETE | `/api/v1/urls/:shortCode` | Delete URL |
-| GET | `/api/v1/urls/:shortCode/analytics` | Click analytics |
-| GET | `/api/v1/qr/:shortCode` | Generate QR code |
+```
+Client
 
----
+ ↓
 
-## Performance Goals
+Nginx
 
-- Redirect latency: **<50 ms** (cache hit)
-- Cache hit ratio: **>95%**
-- Availability: **99.99%**
+ ↓
 
----
+URL Service
 
-## Documentation
+ ↓
 
-- [`docs/architecture.md`](docs/architecture.md) — System design deep dive
-- [`docs/api.md`](docs/api.md) — Full API reference
-- [`docs/database.md`](docs/database.md) — Schema and indexing strategy
-- [`docs/redis.md`](docs/redis.md) — Cache design and TTL strategy
-- [`docs/kafka.md`](docs/kafka.md) — Event streaming and analytics pipeline
-- [`docs/scaling.md`](docs/scaling.md) — Horizontal scaling approach
-- [`docs/security.md`](docs/security.md) — Security measures
-- [`docs/deployment.md`](docs/deployment.md) — Docker + Kubernetes deployment
-- [`docs/monitoring.md`](docs/monitoring.md) — Prometheus + Grafana setup
+Generate Short Code
+
+ ↓
+
+Store in MySQL
+
+ ↓
+
+Return Short URL
+```
 
 ---
 
-## License
+## Redirecting URL
 
-MIT
+```
+Browser
+
+ ↓
+
+localhost/{shortCode}
+
+ ↓
+
+Nginx
+
+ ↓
+
+Redirect Service
+
+ ↓
+
+Redis Lookup
+
+ ↓
+
+MySQL Lookup
+
+ ↓
+
+Kafka Event
+
+ ↓
+
+Redirect Destination
+```
+
+---
+
+# 📈 Monitoring & Observability
+
+## Prometheus
+
+URL:
+
+```
+http://localhost:9090
+```
+
+Used for:
+
+- Service monitoring
+- Metrics collection
+- Health tracking
+
+
+## Grafana
+
+URL:
+
+```
+http://localhost:3000
+```
+
+Used for:
+
+- Dashboards
+- Visualization
+- Performance analysis
+
+---
+
+# 🗄️ Database Design
+
+## Users Table
+
+```
+users
+
+id
+name
+email
+password
+role
+created_at
+```
+
+---
+
+## URLs Table
+
+```
+urls
+
+id
+user_id
+short_code
+original_url
+created_at
+expires_at
+```
+
+---
+
+## Click Analytics Table
+
+```
+clicks
+
+id
+url_id
+ip_address
+browser
+os
+device
+referer
+clicked_at
+```
+
+---
+
+# 🔒 Security Features
+
+Implemented:
+
+- JWT authentication
+- Protected API routes
+- Environment based configuration
+- Password encryption
+- Service isolation
+- Secure communication between services
+
+---
+
+# 📂 Project Structure
+
+```
+distributed-url-shortener
+
+│
+├── gateway
+│   └── nginx.conf
+│
+├── services
+│
+│   ├── auth-service
+│   ├── url-service
+│   ├── redirect-service
+│   ├── analytics-service
+│   ├── qr-service
+│   └── admin-service
+│
+├── infrastructure
+│
+│   ├── mysql
+│   ├── redis
+│   └── monitoring
+│
+├── docker-compose.yml
+│
+└── README.md
+```
+
+---
+
+# 🧪 API Testing
+
+## Register User
+
+```
+POST /api/v1/auth/register
+```
+
+---
+
+## Login
+
+```
+POST /api/v1/auth/login
+```
+
+---
+
+## Create Short URL
+
+```
+POST /api/v1/urls
+```
+
+---
+
+## Redirect
+
+```
+GET /{shortCode}
+```
+
+---
+
+# 🚀 Future Improvements
+
+- Kubernetes deployment
+- AWS cloud deployment
+- CI/CD pipeline
+- Horizontal service scaling
+- Multiple Kafka partitions
+- Rate limiting
+- Distributed tracing
+- OpenTelemetry integration
+- CDN support
+
+---
+
+# 👨‍💻 Author
+
+## Manoj Reddy Dulla
+
+GitHub:
+
+https://github.com/dullamanojreddy
+
+
+---
+
+# ⭐ Project Highlights
+
+This project demonstrates:
+
+✅ Microservices Architecture  
+✅ Distributed Systems Design  
+✅ Event Driven Architecture  
+✅ Kafka Streaming  
+✅ Redis Caching  
+✅ Database Design  
+✅ Docker Containerization  
+✅ Monitoring & Observability  
+
+
+Built as a production-oriented distributed system project.

@@ -1,0 +1,260 @@
+
+  services:
+    # ─── API Gateway ────────────────────────────────────────────────
+    nginx:
+      image: nginx:1.25-alpine
+      ports:
+        - "80:80"
+      volumes:
+        - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      depends_on:
+        - auth-service
+        - url-service
+        - redirect-service
+        - analytics-service
+        - qr-service
+        - admin-service
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    # ─── Microservices ──────────────────────────────────────────────
+    auth-service:
+      build: ./services/auth-service
+      environment:
+        PORT: 3001
+        MYSQL_HOST: mysql
+        MYSQL_PORT: 3306
+        MYSQL_USER: ${MYSQL_USER:-urlshortener}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE:-urlshortener}
+        REDIS_URL: ${REDIS_URL}
+        JWT_SECRET: ${JWT_SECRET}
+        JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+        NODE_ENV: ${NODE_ENV:-production}
+      depends_on:
+        mysql:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    url-service:
+      build: ./services/url-service
+      environment:
+        PORT: 3002
+        MYSQL_HOST: mysql
+        MYSQL_PORT: 3306
+        MYSQL_USER: ${MYSQL_USER:-urlshortener}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE:-urlshortener}
+        REDIS_URL: ${REDIS_URL}
+        JWT_SECRET: ${JWT_SECRET}
+        KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
+        BASE_URL: ${BASE_URL:-http://localhost}
+        NODE_ENV: ${NODE_ENV:-production}
+      depends_on:
+        mysql:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+        kafka:
+          condition: service_healthy
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    redirect-service:
+      build: ./services/redirect-service
+      environment:
+        PORT: 3006
+        MYSQL_HOST: mysql
+        MYSQL_PORT: 3306
+        MYSQL_USER: ${MYSQL_USER:-urlshortener}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE:-urlshortener}
+        REDIS_URL: ${REDIS_URL}
+        KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
+        NODE_ENV: ${NODE_ENV:-production}
+      depends_on:
+        mysql:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+        kafka:
+          condition: service_healthy
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    analytics-service:
+      build: ./services/analytics-service
+      environment:
+        PORT: 3003
+        MYSQL_HOST: mysql
+        MYSQL_PORT: 3306
+        MYSQL_USER: ${MYSQL_USER:-urlshortener}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE:-urlshortener}
+        REDIS_URL: ${REDIS_URL}
+        JWT_SECRET: ${JWT_SECRET}
+        KAFKA_BROKERS: ${KAFKA_BROKERS:-kafka:9092}
+        NODE_ENV: ${NODE_ENV:-production}
+      depends_on:
+        mysql:
+          condition: service_healthy
+        kafka:
+          condition: service_healthy
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    qr-service:
+      build: ./services/qr-service
+      environment:
+        PORT: 3004
+        MYSQL_HOST: mysql
+        MYSQL_PORT: 3306
+        MYSQL_USER: ${MYSQL_USER:-urlshortener}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE:-urlshortener}
+        JWT_SECRET: ${JWT_SECRET}
+        BASE_URL: ${BASE_URL:-http://localhost}
+        NODE_ENV: ${NODE_ENV:-production}
+      depends_on:
+        mysql:
+          condition: service_healthy
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    admin-service:
+      build: ./services/admin-service
+      environment:
+        PORT: 3005
+        MYSQL_HOST: mysql
+        MYSQL_PORT: 3306
+        MYSQL_USER: ${MYSQL_USER:-urlshortener}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE:-urlshortener}
+        REDIS_URL: ${REDIS_URL}
+        JWT_SECRET: ${JWT_SECRET}
+        ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+        NODE_ENV: ${NODE_ENV:-production}
+      depends_on:
+        mysql:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    # ─── Infrastructure ─────────────────────────────────────────────
+    mysql:
+      image: mysql:8.0
+      environment:
+        MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+        MYSQL_USER: ${MYSQL_USER:-urlshortener}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secret}
+        MYSQL_DATABASE: ${MYSQL_DATABASE:-urlshortener}
+      volumes:
+        - mysql-data:/var/lib/mysql
+        - ./infrastructure/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+        interval: 10s
+        timeout: 5s
+        retries: 10
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    redis:
+      image: redis:7-alpine
+      command: redis-server /etc/redis/redis.conf
+      volumes:
+        - redis-data:/data
+        - ./infrastructure/redis/redis.conf:/etc/redis/redis.conf:ro
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 5s
+        timeout: 3s
+        retries: 10
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    zookeeper:
+      image: confluentinc/cp-zookeeper:7.5.0
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+      volumes:
+        - zookeeper-data:/var/lib/zookeeper/data
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    kafka:
+      image: confluentinc/cp-kafka:7.5.0
+      depends_on:
+        - zookeeper
+      environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      volumes:
+        - kafka-data:/var/lib/kafka/data
+      healthcheck:
+        test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+        interval: 10s
+        timeout: 10s
+        retries: 10
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    # ─── Monitoring ─────────────────────────────────────────────────
+    prometheus:
+      image: prom/prometheus:v2.47.0
+      ports:
+        - "9090:9090"
+      volumes:
+        - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+        - prometheus-data:/prometheus
+      networks:
+        - app-net
+      restart: unless-stopped
+
+    grafana:
+      image: grafana/grafana:10.1.0
+      ports:
+        - "3000:3000"
+      environment:
+        GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      volumes:
+        - grafana-data:/var/lib/grafana
+        - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+        - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      depends_on:
+        - prometheus
+      networks:
+        - app-net
+      restart: unless-stopped
+
+  volumes:
+    mysql-data:
+    redis-data:
+    kafka-data:
+    zookeeper-data:
+    prometheus-data:
+    grafana-data:
+
+  networks:
+    app-net:
+      driver: bridge

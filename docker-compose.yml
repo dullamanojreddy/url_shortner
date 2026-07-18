@@ -13,7 +13,6 @@
         - redirect-service
         - analytics-service
         - qr-service
-        - admin-service
       networks:
         - app-net
       restart: unless-stopped
@@ -130,27 +129,6 @@
         - app-net
       restart: unless-stopped
 
-    admin-service:
-      build: ./services/admin-service
-      environment:
-        PORT: 3005
-        MYSQL_HOST: mysql
-        MYSQL_PORT: 3306
-        MYSQL_USER: ${MYSQL_USER:-urlshortener}
-        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-        MYSQL_DATABASE: ${MYSQL_DATABASE:-urlshortener}
-        REDIS_URL: ${REDIS_URL}
-        JWT_SECRET: ${JWT_SECRET}
-        ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
-        NODE_ENV: ${NODE_ENV:-production}
-      depends_on:
-        mysql:
-          condition: service_healthy
-        redis:
-          condition: service_healthy
-      networks:
-        - app-net
-      restart: unless-stopped
 
     # ─── Infrastructure ─────────────────────────────────────────────
     mysql:

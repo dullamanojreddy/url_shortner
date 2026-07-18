@@ -97,7 +97,7 @@ async function processClick(event: ClickEvent) {
       referer,
       clicked_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, INET6_ATON(?), ?, ?, ?, ?, ?)
     `,
     [
       uuidv4(),

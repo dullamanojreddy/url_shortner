@@ -41,7 +41,7 @@ CREATE INDEX idx_urls_expires_at ON urls(expires_at);
 CREATE TABLE IF NOT EXISTS clicks (
   id          CHAR(36)    NOT NULL PRIMARY KEY,
   url_id      CHAR(36)    NOT NULL,
-  ip_address  VARCHAR(45),
+  ip_address  VARBINARY(16),
   country     VARCHAR(100),
   city        VARCHAR(100),
   browser     VARCHAR(100),

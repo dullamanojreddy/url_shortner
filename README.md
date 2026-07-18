@@ -1,578 +1,380 @@
-# 🚀 Distributed URL Shortener - Microservices Architecture
+# 🚀 Distributed URL Shortener
 
-A production-style **distributed URL shortening platform** built using **microservices architecture** with authentication, caching, event-driven analytics, monitoring, and containerized deployment.
+A production-inspired **Distributed URL Shortener** built using a **Microservices Architecture**. The project demonstrates how modern backend systems are designed using independent services, asynchronous communication, caching, monitoring, containerization, and a centralized API gateway.
 
-This project demonstrates real-world distributed system concepts such as:
-
-- Microservices communication
-- API Gateway pattern
-- Redis caching
-- Kafka event streaming
-- Database design
-- Observability
-- Docker-based deployment
-
-Inspired by systems like Bitly.
-
----
-
-# 🏗️ Architecture Overview
-
-```
-                         Client
-                           |
-                           |
-                     Nginx API Gateway
-                           |
-      ------------------------------------------------
-      |          |          |        |        |
-   Auth      URL        Redirect    QR     Admin
- Service   Service      Service  Service Service
-      |          |          |
-      |          |          |
-      ----------- MySQL ----
-                 |
-              Redis Cache
-
-
-Redirect Service
-        |
-        |
-      Kafka
-        |
-        |
-Analytics Consumer
-        |
-        |
-      MySQL
-
-
-Monitoring Layer:
-
-Prometheus  --->  Grafana
-```
+Unlike traditional URL shorteners, this project focuses on scalability, modularity, and observability while providing a clean dashboard for managing shortened links.
 
 ---
 
 # ✨ Features
 
-## 🔗 URL Shortening
+### 🔐 Authentication
+- User Registration
+- User Login
+- JWT Authentication
+- Protected APIs
+- Role-based architecture (Admin/User ready)
 
-- Generate unique short URLs
-- Convert long URLs into compact links
-- Store URL information securely
-- Redirect users instantly
-- Support expiration handling
+---
+
+### 🔗 URL Shortening
+- Generate short URLs instantly
+- Unique short code generation
+- Original URL storage
+- URL expiration support
+- Creation timestamp
+- Short URL generation
+- Copy-friendly links
 
 Example:
 
 ```
-Original URL:
+https://google.com
 
-https://github.com
+↓
 
-
-Generated:
-
-http://localhost/Q3pdJRi2
+http://localhost/Q3pmYUQT
 ```
 
 ---
 
-# 🔐 Authentication System
+### 🔁 Redirect Service
+When a shortened URL is opened:
 
-Implemented using JWT authentication.
-
-Features:
-
-- User registration
-- User login
-- Secure authentication
-- Protected APIs
-- Role-based authorization
-
-Roles:
-
-```
-User
-Admin
-```
+1. Receives request
+2. Looks up original URL
+3. Redirects user instantly
+4. Records analytics event
+5. Publishes click event to Kafka
+6. Analytics service consumes event
+7. Click stored in MySQL
 
 ---
 
-# ⚡ High Performance Redirect System
+### 📊 Analytics
+Every click is tracked automatically.
 
-Redirect flow:
+Current analytics include:
 
-```
-User clicks short URL
+- Browser
+- Operating System
+- Device Type
+- Click Timestamp
+- Original URL
+- Short URL
 
-        |
-        ↓
+Example Database Record
 
-Redirect Service
+| Short URL | Browser | OS | Device | Time |
+|-----------|----------|-----|---------|------|
+| Q3pmYUQT | Chrome | Windows | Desktop | 2026-07-15 11:21 |
 
-        |
-        ↓
+---
 
-Check Redis Cache
-
-        |
-        |
-    Cache Hit
-        |
-        ↓
-
-Instant Redirect
-
-
-    Cache Miss
-
-        |
-        ↓
-
-    MySQL Lookup
-
-        |
-        ↓
-
-    Update Redis
-
-        |
-        ↓
-
-    Redirect User
-```
+### ⚡ Redis Caching
+Frequently accessed URLs are cached inside Redis.
 
 Benefits:
 
-- Faster response time
-- Reduced database queries
+- Faster redirects
+- Reduced MySQL queries
+- Lower latency
 - Better scalability
 
 ---
 
-# 📊 Event Driven Analytics
-
-Analytics processing is implemented using Apache Kafka.
+### 📨 Kafka Event Streaming
+Instead of writing analytics during redirects, click events are published to Kafka.
 
 Flow:
 
 ```
-User Click
-
-    |
-    ↓
-
 Redirect Service
-
-    |
-    ↓
-
+        │
+        ▼
 Kafka Topic
 (url.clicks)
-
-    |
-    ↓
-
-Analytics Consumer
-
-    |
-    ↓
-
-MySQL Analytics Database
+        │
+        ▼
+Analytics Service
+        │
+        ▼
+MySQL
 ```
 
-Collected information:
-
-- Browser
-- Operating System
-- Device type
-- IP Address
-- Referrer
-- Click timestamp
-
-
-Example:
-
-```
-Chrome | Windows | Desktop | 2026-07-15
-```
+This keeps redirects extremely fast while analytics are processed asynchronously.
 
 ---
 
-# 🧩 Microservices
-
-| Service | Port | Responsibility |
-|---------|------|----------------|
-| Nginx Gateway | 80 | API Gateway |
-| Auth Service | 3001 | Authentication |
-| URL Service | 3002 | URL creation |
-| Analytics Service | 3003 | Click tracking |
-| QR Service | 3004 | QR generation |
-| Admin Service | 3005 | Administration |
-| Redirect Service | 3006 | URL redirection |
-
----
-
-# 🛠️ Technology Stack
-
-## Backend
-
-- Node.js
-- TypeScript
-- Express.js
-
-## Database
-
-- MySQL 8
-
-## Cache
-
-- Redis
-
-## Messaging
-
-- Apache Kafka
-- Zookeeper
-
-## Gateway
-
-- Nginx
-
-## Monitoring
+### 📈 Monitoring
+Integrated monitoring stack includes:
 
 - Prometheus
 - Grafana
 
-## Deployment
+Prometheus continuously scrapes metrics from all services.
 
+Grafana visualizes system performance.
+
+Current metrics include:
+
+- Service metrics
+- Request metrics
+- Redirect metrics
+- Application health
+
+---
+
+### 🌐 API Gateway
+Nginx serves as the centralized API Gateway.
+
+Responsibilities:
+
+- Reverse Proxy
+- Route requests to services
+- Single public endpoint
+- Simplified architecture
+
+---
+
+### 🐳 Dockerized Architecture
+Every component runs in its own Docker container.
+
+Services include:
+
+- Auth Service
+- URL Service
+- Redirect Service
+- Analytics Service
+- QR Service
+- Admin Service
+- MySQL
+- Redis
+- Kafka
+- Zookeeper
+- Nginx
+- Prometheus
+- Grafana
+
+---
+
+# 🖥 Current Frontend
+
+The project currently includes a modern dashboard interface.
+
+Features available:
+
+- Dark professional UI
+- Dashboard overview
+- Sidebar navigation
+- URL creation interface
+- URL management table
+- Search functionality
+- Status indicators
+- Expiration information
+- Creation timestamps
+- Remaining validity display
+
+The UI is designed with a SaaS-inspired look similar to modern developer platforms and serves as the foundation for future analytics and monitoring pages.
+
+---
+
+# 🏗 Architecture
+
+```
+                    Client
+                      │
+                      ▼
+                 Nginx Gateway
+                      │
+ ┌──────────────┬───────────────┬───────────────┐
+ ▼              ▼               ▼               ▼
+Auth        URL Service   Redirect Service  Analytics
+                │               │               │
+                ▼               ▼               ▼
+             MySQL          Redis Cache      Kafka
+                                  │             │
+                                  └──────► Analytics
+                                                │
+                                                ▼
+                                              MySQL
+
+Prometheus
+      │
+      ▼
+Grafana
+```
+
+---
+
+# 🛠 Tech Stack
+
+### Backend
+- Node.js
+- Express
+- TypeScript
+
+### Database
+- MySQL
+
+### Cache
+- Redis
+
+### Messaging
+- Apache Kafka
+
+### API Gateway
+- Nginx
+
+### Monitoring
+- Prometheus
+- Grafana
+
+### Authentication
+- JWT
+
+### Containerization
 - Docker
 - Docker Compose
 
 ---
 
-# 🐳 Docker Deployment
-
-The complete application runs using Docker Compose.
-
-Included containers:
+# 📂 Microservices
 
 ```
-✓ Nginx
-✓ Auth Service
-✓ URL Service
-✓ Redirect Service
-✓ Analytics Service
-✓ QR Service
-✓ Admin Service
-✓ MySQL
-✓ Redis
-✓ Kafka
-✓ Zookeeper
-✓ Prometheus
-✓ Grafana
-```
-
----
-
-# 🚀 Running the Project
-
-Clone repository:
-
-```bash
-git clone https://github.com/dullamanojreddy/url_shortner.git
-```
-
-Move into project:
-
-```bash
-cd url_shortner
-```
-
-Build and start:
-
-```bash
-docker compose up --build
-```
-
-Run in background:
-
-```bash
-docker compose up -d
-```
-
-Check running services:
-
-```bash
-docker compose ps
-```
-
----
-
-# 🔄 Request Flow
-
-## Creating Short URL
-
-```
-Client
-
- ↓
-
-Nginx
-
- ↓
+Auth Service
+│
+├── Register
+├── Login
+└── JWT Authentication
 
 URL Service
-
- ↓
-
-Generate Short Code
-
- ↓
-
-Store in MySQL
-
- ↓
-
-Return Short URL
-```
-
----
-
-## Redirecting URL
-
-```
-Browser
-
- ↓
-
-localhost/{shortCode}
-
- ↓
-
-Nginx
-
- ↓
+│
+├── Create Short URL
+├── Manage URLs
+└── Expiration Handling
 
 Redirect Service
-
- ↓
-
-Redis Lookup
-
- ↓
-
-MySQL Lookup
-
- ↓
-
-Kafka Event
-
- ↓
-
-Redirect Destination
-```
-
----
-
-# 📈 Monitoring & Observability
-
-## Prometheus
-
-URL:
-
-```
-http://localhost:9090
-```
-
-Used for:
-
-- Service monitoring
-- Metrics collection
-- Health tracking
-
-
-## Grafana
-
-URL:
-
-```
-http://localhost:3000
-```
-
-Used for:
-
-- Dashboards
-- Visualization
-- Performance analysis
-
----
-
-# 🗄️ Database Design
-
-## Users Table
-
-```
-users
-
-id
-name
-email
-password
-role
-created_at
-```
-
----
-
-## URLs Table
-
-```
-urls
-
-id
-user_id
-short_code
-original_url
-created_at
-expires_at
-```
-
----
-
-## Click Analytics Table
-
-```
-clicks
-
-id
-url_id
-ip_address
-browser
-os
-device
-referer
-clicked_at
-```
-
----
-
-# 🔒 Security Features
-
-Implemented:
-
-- JWT authentication
-- Protected API routes
-- Environment based configuration
-- Password encryption
-- Service isolation
-- Secure communication between services
-
----
-
-# 📂 Project Structure
-
-```
-distributed-url-shortener
-
 │
-├── gateway
-│   └── nginx.conf
+├── Resolve Short URL
+├── Redis Cache
+└── Kafka Event Publishing
+
+Analytics Service
 │
-├── services
+├── Consume Kafka Events
+├── Store Click Data
+└── Generate Analytics
+
+QR Service
 │
-│   ├── auth-service
-│   ├── url-service
-│   ├── redirect-service
-│   ├── analytics-service
-│   ├── qr-service
-│   └── admin-service
+└── QR Code Support (Foundation)
+
+Admin Service
 │
-├── infrastructure
+└── Administrative APIs
+```
+
+---
+
+# 📊 Monitoring Stack
+
+The application includes production-style monitoring using:
+
+- Prometheus
+- Grafana
+
+These tools monitor service metrics, application performance, and overall system health.
+
+---
+
+# 📁 Project Structure
+
+```
+distributed-url-shortener/
 │
-│   ├── mysql
-│   ├── redis
-│   └── monitoring
+├── gateway/
+├── services/
+│   ├── auth-service/
+│   ├── url-service/
+│   ├── redirect-service/
+│   ├── analytics-service/
+│   ├── qr-service/
+│   └── admin-service/
+│
+├── infrastructure/
+│   ├── mysql/
+│   ├── redis/
+│   ├── monitoring/
 │
 ├── docker-compose.yml
-│
 └── README.md
 ```
 
 ---
 
-# 🧪 API Testing
+# 🚀 Current Status
 
-## Register User
+### Completed
 
-```
-POST /api/v1/auth/register
-```
-
----
-
-## Login
-
-```
-POST /api/v1/auth/login
-```
-
----
-
-## Create Short URL
-
-```
-POST /api/v1/urls
-```
+- Microservices Architecture
+- JWT Authentication
+- URL Shortening
+- URL Redirection
+- Click Tracking
+- Browser Detection
+- Device Detection
+- OS Detection
+- Redis Integration
+- Kafka Event Streaming
+- Prometheus Monitoring
+- Grafana Dashboard
+- Docker Deployment
+- Modern Dashboard UI
+- API Gateway
+- MySQL Persistence
 
 ---
 
-## Redirect
+# 🔮 Future Enhancements
 
-```
-GET /{shortCode}
-```
-
----
-
-# 🚀 Future Improvements
-
-- Kubernetes deployment
-- AWS cloud deployment
-- CI/CD pipeline
-- Horizontal service scaling
-- Multiple Kafka partitions
+- Custom URL aliases
+- Password-protected links
+- QR code generation
+- Advanced analytics dashboard
+- Geographic click tracking
+- Click history charts
+- User profile management
+- Team workspaces
 - Rate limiting
-- Distributed tracing
-- OpenTelemetry integration
-- CDN support
+- API keys
+- Public REST API
+- Cloud deployment (AWS/GCP/Azure)
+- HTTPS support
+- Custom domains
+- Mobile-responsive enhancements
+- CI/CD pipeline
+
+---
+
+# 📸 Screenshots
+
+> Add screenshots of:
+- Dashboard
+- URL Creation
+- URL Management
+- Analytics
+- Grafana
+- Prometheus
 
 ---
 
 # 👨‍💻 Author
 
-## Manoj Reddy Dulla
+**Dulla Manoj Reddy**
 
-GitHub:
-
-https://github.com/dullamanojreddy
-
+GitHub: https://github.com/dullamanojreddy
 
 ---
 
-# ⭐ Project Highlights
-
-This project demonstrates:
-
-✅ Microservices Architecture  
-✅ Distributed Systems Design  
-✅ Event Driven Architecture  
-✅ Kafka Streaming  
-✅ Redis Caching  
-✅ Database Design  
-✅ Docker Containerization  
-✅ Monitoring & Observability  
-
-
-Built as a production-oriented distributed system project.
+# ⭐ If you found this project useful, consider giving it a star!

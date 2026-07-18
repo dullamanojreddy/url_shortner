@@ -355,17 +355,7 @@ distributed-url-shortener/
 - Mobile-responsive enhancements
 - CI/CD pipeline
 
----
 
-# 📸 Screenshots
-
-> Add screenshots of:
-- Dashboard
-- URL Creation
-- URL Management
-- Analytics
-- Grafana
-- Prometheus
 
 ---
 
